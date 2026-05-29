@@ -1,5 +1,3 @@
-#nullable enable
-
 using BrutalCompanyMinus.Minus;
 using TemporalStormWeather.Items;
 using TemporalStormWeather.Utils;
@@ -61,7 +59,7 @@ internal class RusticAllItemsBehaviour : MonoBehaviour
 
         for (int i = 0; i < items.Length; i++)
         {
-            _ = TryAttachItem(items[i]);
+            TryAttachItem(items[i]);
         }
     }
 

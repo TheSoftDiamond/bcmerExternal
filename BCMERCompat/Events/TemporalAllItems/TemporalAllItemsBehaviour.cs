@@ -1,5 +1,3 @@
-#nullable enable
-
 using BrutalCompanyMinus.Minus;
 using TemporalStormWeather.Items;
 using TemporalStormWeather.Utils;
@@ -62,7 +60,7 @@ internal class TemporalAllItemsBehaviour : MonoBehaviour
 
         for (int i = 0; i < items.Length; i++)
         {
-            _ = TryApplyItem(items[i]);
+            TryApplyItem(items[i]);
         }
     }
 

@@ -1,5 +1,3 @@
-#nullable enable
-
 using BrutalCompanyMinus;
 using BrutalCompanyMinus.Minus;
 using TemporalStormWeather.Utils;
