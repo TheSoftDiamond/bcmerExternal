@@ -1,5 +1,3 @@
-#nullable enable
-
 using System;
 using BrutalCompanyMinus.Minus;
 using BrutalCompanyMinus.Minus.Handlers.Modded;
