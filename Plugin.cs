@@ -1,56 +1,45 @@
-#nullable enable
-
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using BrutalCompanyMinus.Minus;
+using BepInEx;
+using BepInEx.Bootstrap;
+using BepInEx.Logging;
 using HarmonyLib;
-using TemporalStormWeather.Compat.BCMERCompat.Events.LocustSwarm;
-using TemporalStormWeather.Compat.BCMERCompat.Events.RusticAllItems;
-using TemporalStormWeather.Compat.BCMERCompat.Events.TemporalAllItems;
-using TemporalStormWeather.Compat.BCMERCompat.Events.WorldOfRust;
-using TemporalStormWeather.Utils;
+using TemporalStormWeather.Compat;
+using TemporalStormWeather.Compat.BCMERCompat;
+using TemporalStormWeather.Debug;
+using TemporalStormWeather.Patches;
+using TemporalStormWeather.TemporalStormManagers;
 
-namespace TemporalStormWeather.Compat.BCMERCompat;
+namespace TemporalStormWeather;
 
-internal static class BCMERCompatibility
+[BepInDependency(BrutalCompanyMinusExtraRebornGUID, BepInDependency.DependencyFlags.SoftDependency)] // BCMER must be at least a soft dependency
+[BepInPlugin(modGUID, modName, modVersion)]
+internal class Plugin : BaseUnityPlugin
 {
-    internal static void RegisterEvents()
-    {
-        RegisterEvent(EventManager.moddedEvents, new RusticAllItems());
-        RegisterEvent(EventManager.moddedEvents, new LocustSwarm());
-        RegisterEvent(EventManager.moddedEvents, new WorldOfRust());
-        RegisterEvent(EventManager.moddedEvents, new TemporalAllItems());
-    }
+    private const string BrutalCompanyMinusExtraRebornGUID = "SoftDiamond.BrutalCompanyMinusExtraReborn";
 
-    private static void RegisterEvent(List<MEvent> moddedEvents, MEvent moddedEvent)
-    {
-        string eventName = moddedEvent.Name();
+    internal const string modGUID = "MrHat.TemporalStormWeather.Internals";
+    internal const string modName = "TemporalStormWeather";
+    internal const string modVersion = "0.0.1";
 
-        if (moddedEvents.Any(registeredEvent => registeredEvent.Name() == eventName))
+    internal static ManualLogSource? Mls { get; private set; }
+    internal static Plugin? Instance { get; private set; }
+
+    internal static bool hasBCMER;
+
+    private readonly Harmony _harmony = new(modGUID);
+
+    private void Awake()
+    {
+        Instance = this;
+        Mls = BepInEx.Logging.Logger.CreateLogSource(modGUID);
+
+        hasBCMER = Chainloader.PluginInfos.ContainsKey(BrutalCompanyMinusExtraRebornGUID);
+		
+        ConfigManager.BindConfigs();
+
+        if (hasBCMER)
         {
-            return;
+            BCMERCompatibility.RegisterEvents(); // This should only be called in Plugin.Awake
+            _harmony.PatchAll(typeof(BCMERCompatibility)); // For events `TemporalAllItems` & `RusticAllItems`
         }
-
-        moddedEvents.Add(moddedEvent);
-        Log.Info($"BCMER {eventName} modded event registered");
-    }
-
-    internal static void SetActive(MEvent moddedEvent, bool active)
-    {
-        moddedEvent.Active = active;
-    }
-
-    internal static void SetExecuted(MEvent moddedEvent, bool executed)
-    {
-        moddedEvent.Executed = executed;
-    }
-
-    [HarmonyPatch(typeof(GrabbableObject), nameof(GrabbableObject.Start))]
-    [HarmonyPostfix]
-    private static void Postfix(GrabbableObject __instance)
-    {
-        RusticAllItemsBehaviour.TryAttachItem(__instance);
-        TemporalAllItemsBehaviour.TryApplyItem(__instance);
     }
 }
