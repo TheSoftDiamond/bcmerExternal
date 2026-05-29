@@ -1,122 +1,56 @@
 #nullable enable
 
-using BepInEx;
-using BepInEx.Bootstrap;
-using BepInEx.Logging;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using BrutalCompanyMinus.Minus;
 using HarmonyLib;
-using TemporalStormWeather.Compat;
-using TemporalStormWeather.Compat.BCMERCompat;
-using TemporalStormWeather.Debug;
-using TemporalStormWeather.Patches;
-using TemporalStormWeather.TemporalStormManagers;
+using TemporalStormWeather.Compat.BCMERCompat.Events.LocustSwarm;
+using TemporalStormWeather.Compat.BCMERCompat.Events.RusticAllItems;
+using TemporalStormWeather.Compat.BCMERCompat.Events.TemporalAllItems;
+using TemporalStormWeather.Compat.BCMERCompat.Events.WorldOfRust;
+using TemporalStormWeather.Utils;
 
-namespace TemporalStormWeather;
+namespace TemporalStormWeather.Compat.BCMERCompat;
 
-[BepInDependency(DawnLibGUID, BepInDependency.DependencyFlags.HardDependency)]
-[BepInDependency(DuskGUID, BepInDependency.DependencyFlags.HardDependency)]
-[BepInDependency(PathfindingLibGUID, BepInDependency.DependencyFlags.HardDependency)]
-[BepInDependency(BasedDecorPlacementGUID, BepInDependency.DependencyFlags.SoftDependency)]
-//[BepInDependency("com.github.zehsteam.ImmersiveEntrance", BepInDependency.DependencyFlags.SoftDependency)]
-[BepInDependency(CullFactoryGUID, BepInDependency.DependencyFlags.SoftDependency)]
-[BepInDependency(BrutalCompanyMinusExtraRebornGUID, BepInDependency.DependencyFlags.SoftDependency)]
-[BepInPlugin(modGUID, modName, modVersion)]
-internal class Plugin : BaseUnityPlugin
+internal static class BCMERCompatibility
 {
-    private const string DawnLibGUID = "com.github.teamxiaolan.dawnlib";
-    private const string DuskGUID = "com.github.teamxiaolan.dawnlib.dusk";
-    private const string PathfindingLibGUID = "Zaggy1024.PathfindingLib";
-    private const string BasedDecorPlacementGUID = "MrHat.BasedDecorPlacement";
-    //private const string ImmersiveEntranceGUID = "com.github.zehsteam.ImmersiveEntrance";
-    private const string CullFactoryGUID = "com.fumiko.CullFactory";
-    private const string BrutalCompanyMinusExtraRebornGUID = "SoftDiamond.BrutalCompanyMinusExtraReborn";
-
-    internal const string modGUID = "MrHat.TemporalStormWeather.Internals";
-    internal const string modName = "TemporalStormWeather";
-    internal const string modVersion = "0.0.1";
-
-    internal static ManualLogSource? Mls { get; private set; }
-    internal static Plugin? Instance { get; private set; }
-
-    internal static bool hasBasedDecorPlacement;
-    //internal static bool hasImmersiveEntrance;
-    internal static bool hasCullFactory;
-    internal static bool hasBCMER;
-
-    private readonly Harmony _harmony = new(modGUID);
-
-    private void Awake()
+    internal static void RegisterEvents()
     {
-        Instance = this;
-        Mls = BepInEx.Logging.Logger.CreateLogSource(modGUID);
-        hasBasedDecorPlacement = Chainloader.PluginInfos.ContainsKey(BasedDecorPlacementGUID);
-        //hasImmersiveEntrance = Chainloader.PluginInfos.ContainsKey(ImmersiveEntranceGUID);
-        hasCullFactory = Chainloader.PluginInfos.ContainsKey(CullFactoryGUID);
-        hasBCMER = Chainloader.PluginInfos.ContainsKey(BrutalCompanyMinusExtraRebornGUID);
-        ConfigManager.BindConfigs();
+        RegisterEvent(EventManager.moddedEvents, new RusticAllItems());
+        RegisterEvent(EventManager.moddedEvents, new LocustSwarm());
+        RegisterEvent(EventManager.moddedEvents, new WorldOfRust());
+        RegisterEvent(EventManager.moddedEvents, new TemporalAllItems());
+    }
 
-        Utils.Log.Info("                   +++     +++");
-        Utils.Log.Info("            ++     ++++   ++++     ++");
-        Utils.Log.Info("           +++++ +++++++++++++++ +++++");
-        Utils.Log.Info("            +++++++++++++++++++++++++");
-        Utils.Log.Info("      ++++++++++++++++++++++++++++++++++++++");
-        Utils.Log.Info("      +++++++++++++++++++++++++++++++++++++");
-        Utils.Log.Info("        +++++++++++    ++++    +++++++++++");
-        Utils.Log.Info("  ++++++++++++++       ++++       ++++++++++++++");
-        Utils.Log.Info(" +++++++++++++         ++++         +++++++++++++");
-        Utils.Log.Info("     +++++++++++++   ++++++++   +++++++++++++");
-        Utils.Log.Info("    ++++++++ ++++++++++++++++++++++++ ++++++++");
-        Utils.Log.Info("+++++++++++     +++++++     ++++++     +++++++++++");
-        Utils.Log.Info("+++++++++++      ++++        ++++      +++++++++++");
-        Utils.Log.Info("    +++++++      ++++        ++++      +++++++");
-        Utils.Log.Info("    +++++++     ++++++      ++++++     +++++++");
-        Utils.Log.Info("++++++++++++ ++++++++++++++++++++++++ ++++++++++++");
-        Utils.Log.Info(" ++++++++++++++++    ++++++++    ++++++++++++++++");
-        Utils.Log.Info("     +++++++++         ++++         +++++++++");
-        Utils.Log.Info("     +++++++++++       ++++        ++++++++++");
-        Utils.Log.Info("   +++++++++++++++     ++++     +++++++++++++++");
-        Utils.Log.Info("    +++  ++++++++++++++++++++++++++++++++  +++");
-        Utils.Log.Info("          ++++++++++++++++++++++++++++++");
-        Utils.Log.Info("         ++++++++++++++++++++++++++++++++");
-        Utils.Log.Info("          ++    ++++++++++++++++++    ++");
-        Utils.Log.Info("                ++++   ++++   ++++");
-        Utils.Log.Info("                 ++    ++++    ++");
+    private static void RegisterEvent(List<MEvent> moddedEvents, MEvent moddedEvent)
+    {
+        string eventName = moddedEvent.Name();
 
-        _harmony.PatchAll(typeof(EnemyAIPatches));
-        _harmony.PatchAll(typeof(EntranceTeleportPatches));
-        _harmony.PatchAll(typeof(GameNetworkManagerPatches));
-        _harmony.PatchAll(typeof(GrabbableObjectPatches));
-        _harmony.PatchAll(typeof(HUDManagerPatches));
-        _harmony.PatchAll(typeof(LungPropPatches));
-        _harmony.PatchAll(typeof(NetworkManagerPatches));
-        _harmony.PatchAll(typeof(PlayerControllerBPatches));
-        _harmony.PatchAll(typeof(SoundManagerPatches));
-        _harmony.PatchAll(typeof(StartOfRoundPatches));
-        _harmony.PatchAll(typeof(ChatGlitchManager));
-        _harmony.PatchAll(typeof(TimeOfDayPatches));
-
-        if (hasBasedDecorPlacement)
+        if (moddedEvents.Any(registeredEvent => registeredEvent.Name() == eventName))
         {
-            BasedDecorPlacementCompat.RegisterSurfaceExtensions();
-            Utils.Log.Info("BasedDecorPlacement compatibility enabled");
+            return;
         }
 
-        //if (HasImmersiveEntrance)
-        //{
-        //    _harmony.PatchAll(typeof(ImmersiveEntranceCompat));
-        //    Utils.Log.Info("ImmersiveEntrance compatibility enabled");
-        //}
+        moddedEvents.Add(moddedEvent);
+        Log.Info($"BCMER {eventName} modded event registered");
+    }
 
-        if (hasCullFactory)
-        {
-            _harmony.PatchAll(typeof(CullFactoryCompat));
-            Utils.Log.Info("CullFactory compatibility enabled");
-        }
+    internal static void SetActive(MEvent moddedEvent, bool active)
+    {
+        moddedEvent.Active = active;
+    }
 
-        if (hasBCMER)
-        {
-            Utils.Log.Info("Brutal Company Minus Extra Reborn compatibility enabled");
-            BCMERCompatibility.RegisterEvents();
-            _harmony.PatchAll(typeof(BCMERCompatibility)); // For events `TemporalAllItems` & `RusticAllItems`
-        }
+    internal static void SetExecuted(MEvent moddedEvent, bool executed)
+    {
+        moddedEvent.Executed = executed;
+    }
+
+    [HarmonyPatch(typeof(GrabbableObject), nameof(GrabbableObject.Start))]
+    [HarmonyPostfix]
+    private static void Postfix(GrabbableObject __instance)
+    {
+        RusticAllItemsBehaviour.TryAttachItem(__instance);
+        TemporalAllItemsBehaviour.TryApplyItem(__instance);
     }
 }
