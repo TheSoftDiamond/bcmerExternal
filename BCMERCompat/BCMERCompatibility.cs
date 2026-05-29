@@ -1,8 +1,5 @@
-#nullable enable
-
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using BrutalCompanyMinus.Minus;
 using HarmonyLib;
 using TemporalStormWeather.Compat.BCMERCompat.Events.LocustSwarm;
@@ -15,9 +12,6 @@ namespace TemporalStormWeather.Compat.BCMERCompat;
 
 internal static class BCMERCompatibility
 {
-    private static readonly FieldInfo Active = typeof(MEvent).GetField("Active", BindingFlags.Instance | BindingFlags.NonPublic)!;
-    private static readonly FieldInfo Executed = typeof(MEvent).GetField("Executed", BindingFlags.Instance | BindingFlags.NonPublic)!;
-
     internal static void RegisterEvents()
     {
         RegisterEvent(EventManager.moddedEvents, new RusticAllItems());
@@ -41,19 +35,19 @@ internal static class BCMERCompatibility
 
     internal static void SetActive(MEvent moddedEvent, bool active)
     {
-        Active.SetValue(moddedEvent, active);
+        moddedEvent.Active = active;
     }
 
     internal static void SetExecuted(MEvent moddedEvent, bool executed)
     {
-        Executed.SetValue(moddedEvent, executed);
+        moddedEvent.Executed = executed;
     }
 
     [HarmonyPatch(typeof(GrabbableObject), nameof(GrabbableObject.Start))]
     [HarmonyPostfix]
     private static void Postfix(GrabbableObject __instance)
     {
-        _ = RusticAllItemsBehaviour.TryAttachItem(__instance);
-        _ = TemporalAllItemsBehaviour.TryApplyItem(__instance);
+        RusticAllItemsBehaviour.TryAttachItem(__instance);
+        TemporalAllItemsBehaviour.TryApplyItem(__instance);
     }
 }
